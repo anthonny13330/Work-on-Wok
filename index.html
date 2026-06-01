@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Work on Pan — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f0d;
+      --bg2: #0e1512;
+      --teal: #2abfaa;
+      --teal-dim: rgba(42,191,170,0.15);
+      --white: #f0f5f3;
+      --gray: rgba(240,245,243,0.5);
+      --gray2: rgba(240,245,243,0.25);
+      --card-bg: rgba(255,255,255,0.04);
+      --card-border: rgba(42,191,170,0.15);
+      --radius: 16px;
+    }
+
+    html, body { min-height: 100%; background: var(--bg); color: var(--white); font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 80% 10%, rgba(42,191,170,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 10% 90%, rgba(42,191,170,0.05) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      background-image: linear-gradient(rgba(42,191,170,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(42,191,170,0.03) 1px, transparent 1px);
+      background-size: 48px 48px; pointer-events: none; z-index: 0;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 5%;
+      background: rgba(10,15,13,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 900;
+      color: var(--white); text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--teal); font-style: italic; }
+
+    .nav-center {
+      display: flex; gap: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 50px; padding: 4px;
+    }
+
+    .nav-tab {
+      padding: 7px 20px; border-radius: 50px;
+      font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; color: var(--gray);
+      border: none; background: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-tab.active { background: var(--teal); color: var(--bg); font-weight: 600; }
+
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+
+    .perfil-badge {
+      font-size: 0.78rem; font-weight: 500;
+      padding: 6px 14px;
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      color: var(--teal);
+      background: var(--teal-dim);
+    }
+
+    .btn-sair {
+      font-size: 0.82rem; color: var(--gray2);
+      background: none; border: none;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: color 0.2s;
+    }
+    .btn-sair:hover { color: var(--white); }
+
+    /* ── PROFILE DROPDOWN ── */
+    .profile-menu-wrap { position: relative; }
+
+    .profile-btn {
+      display: flex; align-items: center; gap: 9px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 50px; padding: 6px 14px 6px 6px;
+      cursor: pointer; color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .profile-btn:hover { background: rgba(42,191,170,0.1); border-color: var(--teal); }
+    .profile-btn.open  { background: rgba(42,191,170,0.1); border-color: var(--teal); }
+
+    .profile-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--teal-dim); border: 1.5px solid rgba(42,191,170,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; flex-shrink: 0;
+      font-family: 'Playfair Display', serif; font-weight: 700;
+      color: var(--teal); overflow: hidden;
+    }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .profile-name { font-size: 0.82rem; font-weight: 500; color: var(--white); }
+
+    /* DROPDOWN */
+    .profile-dropdown {
+      display: none;
+      position: absolute; top: calc(100% + 10px); right: 0;
+      min-width: 220px;
+      background: #111a17;
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px; padding: 8px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      z-index: 200;
+      animation: dropDown 0.2s ease both;
+    }
+    .profile-dropdown.open { display: block; }
+
+    @keyframes dropDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .pd-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 10px 12px;
+    }
+
+    .pd-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--teal-dim); border: 1.5px solid rgba(42,191,170,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif; font-weight: 700;
+      font-size: 1rem; color: var(--teal); flex-shrink: 0; overflow: hidden;
+    }
+    .pd-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .pd-info { min-width: 0; }
+    .pd-info strong { display: block; font-size: 0.9rem; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pd-info span { font-size: 0.75rem; color: var(--gray); }
+
+    .pd-sep { height: 1px; background: var(--card-border); margin: 4px 0; }
+
+    .pd-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 10px 12px;
+      background: none; border: none;
+      color: var(--gray); font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem; cursor: pointer; border-radius: 10px;
+      text-align: left; transition: background 0.15s, color 0.15s;
+    }
+    .pd-item:hover { background: rgba(255,255,255,0.06); color: var(--white); }
+    .pd-item.pd-sair { color: rgba(255,100,100,0.7); }
+    .pd-item.pd-sair:hover { background: rgba(255,80,80,0.1); color: #ff8080; }
+
+    .pd-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
+
+    /* ── LAYOUT ── */
+    .page { position: relative; z-index: 1; }
+
+    /* Cada vista */
+    .vista { display: none; }
+    .vista.active { display: block; }
+
+    /* ── DASHBOARD HEADER ── */
+    .dash-header {
+      padding: 36px 5% 28px;
+      border-bottom: 1px solid var(--card-border);
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .dash-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 900; letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .dash-header h1 span { color: var(--teal); font-style: italic; }
+    .dash-header p { color: var(--gray); font-size: 0.92rem; font-weight: 300; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 20px 5%;
+      border-bottom: 1px solid var(--card-border);
+      animation: fadeIn 0.6s ease 0.1s both;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px 22px;
+      flex: 1; min-width: 130px;
+    }
+    .stat-card .label { font-size: 0.73rem; color: var(--gray2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .stat-card .value { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--white); }
+    .stat-card .value span { color: var(--teal); }
+
+    /* ── MAIN CONTENT ── */
+    .dash-body { padding: 28px 5%; display: grid; gap: 24px; }
+
+    /* ── SECTION TITLE ── */
+    .sec-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    .sec-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+    .sec-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px; color: var(--teal); margin-bottom: 4px; }
+
+    /* ── CARDS GRID ── */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    /* ── PROJETO CARD ── */
+    .proj-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+      animation: fadeUp 0.5s ease both;
+    }
+    .proj-card:hover { border-color: var(--teal); box-shadow: 0 8px 32px rgba(42,191,170,0.15); transform: translateY(-3px); }
+
+    .proj-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
+
+    .cat-badge {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 50px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .cat-Design  { background: rgba(42,191,170,0.15); color: var(--teal); }
+    .cat-Dev     { background: rgba(100,180,255,0.12); color: #7ec8ff; }
+    .cat-Marketing { background: rgba(255,180,50,0.12); color: #ffc85a; }
+    .cat-Redação { background: rgba(200,130,255,0.12); color: #d49fff; }
+    .cat-Vídeo   { background: rgba(255,100,100,0.12); color: #ff9999; }
+    .cat-Dados   { background: rgba(80,200,120,0.12); color: #70e090; }
+
+    .proj-budget {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem; font-weight: 700; color: var(--teal);
+      white-space: nowrap;
+    }
+
+    .proj-card h3 { font-size: 0.97rem; font-weight: 600; margin-bottom: 8px; line-height: 1.35; color: var(--white); }
+    .proj-card p  { font-size: 0.82rem; color: var(--gray); margin-bottom: 14px; line-height: 1.5; }
+
+    .proj-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .proj-tags span {
+      font-size: 0.72rem; padding: 3px 9px;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--gray);
+    }
+
+    .proj-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      border-top: 1px solid var(--card-border); padding-top: 12px;
+      font-size: 0.78rem; color: var(--gray2); flex-wrap: wrap; gap: 8px;
+    }
+
+    .btn-teal {
+      padding: 7px 16px; background: var(--teal); color: var(--bg);
+      border: none; border-radius: 50px;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-teal:hover { transform: scale(1.04); box-shadow: 0 4px 16px rgba(42,191,170,0.3); }
+
+    .btn-ghost {
+      padding: 7px 16px; background: transparent;
+      border: 1px solid var(--card-border); color: var(--gray);
+      border-radius: 50px; font-size: 0.78rem; font-weight: 500;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
+
+    /* ── FREELANCER CARD ── */
+    .free-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      display: flex; flex-direction: column; gap: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+      animation: fadeUp 0.5s ease both;
+    }
+    .free-card:hover { border-color: var(--teal); box-shadow: 0 8px 32px rgba(42,191,170,0.15); transform: translateY(-3px); }
+
+    .free-top { display: flex; align-items: center; gap: 14px; }
+
+    .avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: var(--teal-dim); border: 2px solid rgba(42,191,170,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem; font-weight: 700; color: var(--teal);
+      flex-shrink: 0;
+    }
+
+    .free-info strong { display: block; font-size: 0.97rem; font-weight: 600; margin-bottom: 2px; }
+    .free-info span { font-size: 0.78rem; color: var(--teal); }
+
+    .stars { color: #ffc85a; font-size: 0.8rem; letter-spacing: 1px; }
+
+    .free-bio { font-size: 0.82rem; color: var(--gray); line-height: 1.5; }
+
+    .free-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .free-tags span {
+      font-size: 0.72rem; padding: 3px 9px; border-radius: 50px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--gray);
+    }
+
+    .free-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 12px; flex-wrap: wrap; gap: 8px; }
+    .free-rate { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; color: var(--teal); }
+
+    /* ── PUBLICAR PROJETO FORM ── */
+    .pub-box {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      animation: fadeUp 0.5s ease 0.1s both;
+    }
+
+    .pub-box h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-group label { font-size: 0.78rem; font-weight: 500; color: var(--gray); letter-spacing: 0.3px; }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; padding: 11px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(42,191,170,0.2);
+      border-radius: 10px; color: var(--white);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(240,245,243,0.2); }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--teal); background: rgba(42,191,170,0.05); }
+    .form-group select option { background: #0a0f0d; }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+    .form-group small { font-size: 0.73rem; color: var(--gray2); }
+
+    .btn-pub {
+      padding: 13px 32px;
+      background: var(--teal); color: var(--bg);
+      border: none; border-radius: 50px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-pub:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(42,191,170,0.35); }
+
+    .pub-success {
+      display: none;
+      background: rgba(42,191,170,0.1);
+      border: 1px solid rgba(42,191,170,0.3);
+      border-radius: 12px; padding: 16px;
+      text-align: center; color: var(--teal);
+      font-size: 0.92rem; margin-bottom: 16px;
+    }
+
+    /* ── PROJETOS DO CLIENTE (os seus) ── */
+    .meus-proj-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; flex-wrap: wrap;
+      animation: fadeUp 0.5s ease both;
+      transition: border-color 0.2s;
+    }
+    .meus-proj-card:hover { border-color: rgba(42,191,170,0.35); }
+
+    .mpj-info h4 { font-size: 0.97rem; font-weight: 600; margin-bottom: 4px; }
+    .mpj-info span { font-size: 0.78rem; color: var(--gray); }
+
+    .mpj-status {
+      font-size: 0.72rem; font-weight: 600;
+      padding: 4px 12px; border-radius: 50px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .status-aberto  { background: rgba(42,191,170,0.15); color: var(--teal); }
+    .status-andamento { background: rgba(255,200,90,0.15); color: #ffc85a; }
+    .status-concluido { background: rgba(80,200,120,0.12); color: #70e090; }
+
+    /* ── FILTROS ── */
+    .filtros {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+      animation: fadeIn 0.5s ease 0.1s both;
+    }
+
+    .filtro-btn {
+      padding: 7px 16px; border-radius: 50px;
+      font-size: 0.8rem; font-weight: 500;
+      border: 1px solid var(--card-border);
+      background: none; color: var(--gray);
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .filtro-btn:hover, .filtro-btn.active { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 20px;
+      animation: fadeIn 0.5s ease both;
+    }
+    .search-bar input {
+      flex: 1; padding: 10px 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(42,191,170,0.2);
+      border-radius: 50px; color: var(--white);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-bar input::placeholder { color: var(--gray2); }
+    .search-bar input:focus { border-color: var(--teal); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      z-index: 200; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #111a17;
+      border: 1.5px solid var(--card-border);
+      border-radius: 20px; padding: 36px;
+      max-width: 520px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      position: relative; animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,0.06); border: none;
+      border-radius: 50%; width: 34px; height: 34px;
+      font-size: 0.9rem; cursor: pointer; color: var(--gray);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.12); color: var(--white); }
+
+    .modal h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 8px; }
+    .modal > p { color: var(--gray); font-size: 0.88rem; margin-bottom: 20px; line-height: 1.6; }
+
+    .modal-meta {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px;
+    }
+    .modal-meta-item {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+      border-radius: 10px; padding: 10px 16px; font-size: 0.82rem;
+    }
+    .modal-meta-item strong { color: var(--teal); display: block; font-size: 0.95rem; }
+
+    .modal-sep { border: none; border-top: 1px solid var(--card-border); margin: 20px 0; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--gray2);
+      grid-column: 1 / -1;
+    }
+    .empty-state div { font-size: 2.8rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      margin-top: 60px; padding: 24px 5%;
+      border-top: 1px solid var(--card-border);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+      font-size: 0.78rem; color: var(--gray2);
+    }
+    .page-footer a { color: var(--teal); text-decoration: none; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeUp   { from { opacity: 0; transform: translateY(12px);  } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (max-width: 700px) {
+      .form-row { grid-template-columns: 1fr; }
+      .nav-center { display: none; }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="logo">Work <span>on Pan</span></a>
+
+  <div class="nav-center" id="navCenter">
+    <!-- tabs dinâmicos injetados por JS -->
+  </div>
+
+  <div class="nav-right">
+    <!-- PERFIL DROPDOWN -->
+    <div class="profile-menu-wrap" id="profileMenuWrap">
+      <button class="profile-btn" id="profileBtn" onclick="toggleProfileMenu()">
+        <div class="profile-avatar" id="profileAvatar">👤</div>
+        <span class="profile-name" id="profileName">Conta</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="opacity:0.5;transition:transform 0.2s" id="profileChevron">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- DROPDOWN -->
+      <div class="profile-dropdown" id="profileDropdown">
+        <!-- cabeçalho -->
+        <div class="pd-header">
+          <div class="pd-avatar" id="pdAvatar">👤</div>
+          <div class="pd-info">
+            <strong id="pdNome">Utilizador</strong>
+            <span id="pdHandle">@utilizador</span>
+          </div>
+        </div>
+
+        <div class="pd-sep"></div>
+
+        <button class="pd-item" onclick="irPerfil()">
+          <span class="pd-icon">✦</span> O meu perfil
+        </button>
+        <button class="pd-item" onclick="irConfiguracoes()">
+          <span class="pd-icon">⚙</span> Definições
+        </button>
+        <button class="pd-item" onclick="irAjuda()">
+          <span class="pd-icon">◎</span> Ajuda
+        </button>
+
+        <div class="pd-sep"></div>
+
+        <button class="pd-item pd-sair" onclick="sair()">
+          <span class="pd-icon">↪</span> Terminar sessão
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page" id="page">
+
+  <!-- ╔══════════════════════════════╗ -->
+  <!-- ║   VISTA FREELANCER           ║ -->
+  <!-- ╚══════════════════════════════╝ -->
+  <div class="vista" id="vistaFreelancer">
+
+    <div class="dash-header">
+      <h1>Bom trabalho, <span>Freelancer</span> 👷</h1>
+      <p>Encontra projetos, envia propostas e cresce na tua carreira.</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="label">Projetos disponíveis</div>
+        <div class="value"><span id="fTotalProj">10</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Propostas enviadas</div>
+        <div class="value"><span>0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Em andamento</div>
+        <div class="value"><span>0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Concluídos</div>
+        <div class="value"><span>0</span></div>
+      </div>
+    </div>
+
+    <div class="dash-body">
+
+      <!-- PESQUISA + FILTROS -->
+      <div>
+        <div class="search-bar">
+          <input type="text" id="fSearch" placeholder="🔍  Pesquisar projetos..." oninput="renderFreelancerProjs()"/>
+        </div>
+        <div class="filtros" id="fFiltros">
+          <button class="filtro-btn active" onclick="setFiltro(this, '')" data-cat="">Todos</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Design')" data-cat="Design">🎨 Design</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Dev')" data-cat="Dev">💻 Dev</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Marketing')" data-cat="Marketing">📣 Marketing</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Redação')" data-cat="Redação">✍️ Redação</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Vídeo')" data-cat="Vídeo">🎬 Vídeo</button>
+          <button class="filtro-btn" onclick="setFiltro(this, 'Dados')" data-cat="Dados">📊 Dados</button>
+        </div>
+      </div>
+
+      <!-- LISTA DE PROJETOS -->
+      <div>
+        <div class="sec-header">
+          <div>
+            <div class="sec-label">Oportunidades</div>
+            <div class="sec-title">Projetos disponíveis</div>
+          </div>
+          <span id="fCountLabel" style="font-size:0.82rem;color:var(--gray2)"></span>
+        </div>
+        <div class="cards-grid" id="fProjGrid"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ╔══════════════════════════════╗ -->
+  <!-- ║   VISTA CLIENTE              ║ -->
+  <!-- ╚══════════════════════════════╝ -->
+  <div class="vista" id="vistaCliente">
+
+    <div class="dash-header">
+      <h1>Olá, <span>Cliente</span> 🧑</h1>
+      <p>Publica projetos, encontra os melhores freelancers e faz acontecer.</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="label">Projetos publicados</div>
+        <div class="value"><span id="cTotalProj">0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Propostas recebidas</div>
+        <div class="value"><span id="cTotalProp">0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Em andamento</div>
+        <div class="value"><span>0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Freelancers disponíveis</div>
+        <div class="value"><span>2.4k<span style="font-size:1rem">+</span></span></div>
+      </div>
+    </div>
+
+    <div class="dash-body">
+
+      <!-- PUBLICAR PROJETO -->
+      <div>
+        <div class="sec-header" style="margin-bottom:16px">
+          <div>
+            <div class="sec-label">Nova oferta</div>
+            <div class="sec-title">Publicar projeto</div>
+          </div>
+        </div>
+
+        <div class="pub-box">
+          <div class="pub-success" id="pubSuccess">🎉 Projeto publicado com sucesso! Já está visível para os freelancers.</div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Título do projeto</label>
+              <input type="text" id="pubTitulo" placeholder="Ex: Redesign do meu site"/>
+            </div>
+            <div class="form-group">
+              <label>Categoria</label>
+              <select id="pubCat">
+                <option value="">Seleciona a categoria</option>
+                <option value="Design">🎨 Design & UI/UX</option>
+                <option value="Dev">💻 Desenvolvimento</option>
+                <option value="Marketing">📣 Marketing Digital</option>
+                <option value="Redação">✍️ Redação & Conteúdo</option>
+                <option value="Vídeo">🎬 Vídeo & Animação</option>
+                <option value="Dados">📊 Dados & BI</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Descrição do projeto</label>
+            <textarea id="pubDesc" placeholder="Descreve o que precisas, os objetivos e os detalhes importantes..."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Orçamento</label>
+              <input type="number" id="pubBudget" placeholder="Ex: 500"/>
+            </div>
+            <div class="form-group">
+              <label>Moeda</label>
+              <select id="pubMoeda">
+                <option value="EUR">€ Euro (padrão)</option>
+                <option value="BRL">R$ Real Brasileiro</option>
+                <option value="USD">$ Dólar Americano</option>
+                <option value="GBP">£ Libra Esterlina</option>
+                <option value="CHF">Fr Franco Suíço</option>
+                <option value="CAD">C$ Dólar Canadiano</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Prazo (dias)</label>
+              <input type="number" id="pubPrazo" placeholder="Ex: 15"/>
+            </div>
+            <div class="form-group">
+              <label>Tags (separadas por vírgula)</label>
+              <input type="text" id="pubTags" placeholder="Ex: Figma, Branding, Logo"/>
+            </div>
+          </div>
+
+          <button class="btn-pub" onclick="publicarProjeto()">🍳 Publicar projeto</button>
+        </div>
+      </div>
+
+      <!-- MEUS PROJETOS -->
+      <div>
+        <div class="sec-header">
+          <div>
+            <div class="sec-label">Os teus projetos</div>
+            <div class="sec-title">Publicados por ti</div>
+          </div>
+        </div>
+        <div id="meusProjetosLista" style="display:flex;flex-direction:column;gap:12px">
+          <div class="empty-state">
+            <div>📋</div>
+            <p>Ainda não publicaste nenhum projeto.<br/>Usa o formulário acima para começar!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FREELANCERS -->
+      <div>
+        <div class="sec-header">
+          <div>
+            <div class="sec-label">Talentos</div>
+            <div class="sec-title">Freelancers disponíveis</div>
+          </div>
+        </div>
+        <div class="cards-grid" id="cFreeGrid"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- MODAL PROPOSTA (Freelancer) -->
+<div class="modal-overlay" id="modalProposta" onclick="fecharModalProposta(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalProposta').classList.remove('open')">✕</button>
+    <h3 id="mpTitulo"></h3>
+    <p id="mpDesc"></p>
+    <div class="modal-meta">
+      <div class="modal-meta-item"><strong id="mpBudget"></strong>Orçamento</div>
+      <div class="modal-meta-item"><strong id="mpMoeda"></strong>Moeda</div>
+      <div class="modal-meta-item"><strong id="mpPrazo"></strong>Prazo</div>
+      <div class="modal-meta-item"><strong id="mpCliente"></strong>Cliente</div>
+    </div>
+    <hr class="modal-sep"/>
+    <p style="font-size:0.9rem;font-weight:600;margin-bottom:14px;color:var(--white)">Enviar proposta</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>O teu valor</label><input type="number" id="mpValor" placeholder="Ex: 400"/></div>
+      <div class="form-group">
+        <label>Moeda da proposta</label>
+        <select id="mpMoedaProp">
+          <option value="EUR">€ Euro</option>
+          <option value="BRL">R$ Real</option>
+          <option value="USD">$ Dólar</option>
+          <option value="GBP">£ Libra</option>
+          <option value="CHF">Fr Franco</option>
+          <option value="CAD">C$ Canadiano</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Prazo de entrega</label><input type="text" id="mpPrazoProp" placeholder="Ex: 10 dias"/></div>
+    <div class="form-group"><label>Mensagem ao cliente</label><textarea id="mpMsg" placeholder="Apresenta-te e explica porque és o ideal..."></textarea></div>
+    <div id="mpSuccess" style="display:none;background:rgba(42,191,170,0.1);border:1px solid rgba(42,191,170,0.3);border-radius:10px;padding:12px;text-align:center;color:var(--teal);font-size:0.88rem;margin-bottom:12px">✅ Proposta enviada!</div>
+    <button class="btn-teal" style="width:100%;padding:13px;font-size:0.95rem;border-radius:12px" onclick="enviarProposta()">Enviar proposta →</button>
+  </div>
+</div>
+
+<!-- MODAL FREELANCER (Cliente) -->
+<div class="modal-overlay" id="modalFreelancer" onclick="fecharModalFree(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalFreelancer').classList.remove('open')">✕</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <div class="avatar" id="mfAvatar" style="width:56px;height:56px;font-size:1.2rem"></div>
+      <div>
+        <h3 id="mfNome" style="margin-bottom:4px"></h3>
+        <span style="color:var(--teal);font-size:0.85rem" id="mfArea"></span>
+      </div>
+    </div>
+    <div class="stars" id="mfStars" style="margin-bottom:12px"></div>
+    <p id="mfBio" style="font-size:0.88rem;color:var(--gray);line-height:1.6;margin-bottom:16px"></p>
+    <div class="modal-meta">
+      <div class="modal-meta-item"><strong id="mfRate"></strong>Valor/hora</div>
+      <div class="modal-meta-item"><strong id="mfProj"></strong>Projetos feitos</div>
+    </div>
+    <hr class="modal-sep"/>
+    <div id="mfTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px"></div>
+    <button class="btn-teal" style="width:100%;padding:13px;font-size:0.95rem;border-radius:12px" onclick="contatarFreelancer()">💬 Contactar freelancer</button>
+    <div id="mfContactSuccess" style="display:none;background:rgba(42,191,170,0.1);border:1px solid rgba(42,191,170,0.3);border-radius:10px;padding:12px;text-align:center;color:var(--teal);font-size:0.88rem;margin-top:12px">✅ Pedido de contacto enviado!</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// DADOS
+// ═══════════════════════════════════
+const MOEDAS = {
+  EUR: { simbolo: '€', nome: 'Euro' },
+  BRL: { simbolo: 'R$', nome: 'Real' },
+  USD: { simbolo: '$', nome: 'Dólar' },
+  GBP: { simbolo: '£', nome: 'Libra' },
+  CHF: { simbolo: 'Fr', nome: 'Franco' },
+  CAD: { simbolo: 'C$', nome: 'CAD' },
+};
+
+const projetos = [
+  { id:1, titulo:"Redesign de identidade visual para startup", desc:"Precisamos renovar o logo, paleta de cores e guia de marca completo.", categoria:"Design", budget:1200, moeda:"EUR", prazo:15, tags:["Branding","Figma","Illustrator"], cliente:"TechStart Lda", propostas:4, data:"2025-06-01" },
+  { id:2, titulo:"Desenvolvimento de app mobile para delivery", desc:"App iOS e Android com integração de pagamento e rastreamento em tempo real.", categoria:"Dev", budget:4500, moeda:"BRL", prazo:45, tags:["React Native","Node.js","API REST"], cliente:"FoodExpress", propostas:7, data:"2025-05-30" },
+  { id:3, titulo:"Gestão de redes sociais — 3 meses", desc:"Criação de conteúdo e gestão de Instagram e LinkedIn para e-commerce de moda.", categoria:"Marketing", budget:800, moeda:"EUR", prazo:90, tags:["Instagram","Copywriting","Canva"], cliente:"ModaVibe", propostas:12, data:"2025-05-28" },
+  { id:4, titulo:"Landing page para lançamento de curso", desc:"Página de vendas com seções de benefícios, depoimentos, FAQ e pagamento.", categoria:"Dev", budget:950, moeda:"USD", prazo:10, tags:["HTML/CSS","JavaScript","WordPress"], cliente:"EduPro Cursos", propostas:9, data:"2025-05-27" },
+  { id:5, titulo:"Produção de vídeos institucionais (5 vídeos)", desc:"Roteiro, filmagem e edição de 5 vídeos curtos de 1-2 minutos.", categoria:"Vídeo", budget:3200, moeda:"EUR", prazo:30, tags:["Premiere","After Effects","Roteiro"], cliente:"Construtora Alfa", propostas:3, data:"2025-05-26" },
+  { id:6, titulo:"Dashboard de BI para análise de vendas", desc:"Dashboard interativo no Power BI ligado a PostgreSQL com KPIs de vendas.", categoria:"Dados", budget:2100, moeda:"GBP", prazo:20, tags:["Power BI","SQL","PostgreSQL"], cliente:"Distribuidora Norte", propostas:5, data:"2025-05-25" },
+  { id:7, titulo:"Redação de 20 artigos para blog corporativo", desc:"Artigos de 800-1200 palavras sobre tecnologia, SEO-friendly.", categoria:"Redação", budget:600, moeda:"EUR", prazo:25, tags:["SEO","Wordpress","Copywriting"], cliente:"AgênciaWeb360", propostas:18, data:"2025-05-24" },
+  { id:8, titulo:"Sistema de gestão de stock (web)", desc:"CRUD completo com controlo de entrada/saída, relatórios e autenticação.", categoria:"Dev", budget:6500, moeda:"BRL", prazo:60, tags:["Python","Django","React"], cliente:"Atacado Max", propostas:6, data:"2025-05-23" },
+  { id:9, titulo:"Design de UI para plataforma SaaS", desc:"Design completo no Figma para plataforma de gestão de projetos — 15 ecrãs.", categoria:"Design", budget:2800, moeda:"EUR", prazo:21, tags:["Figma","UI Design","Design System"], cliente:"FlowWork", propostas:8, data:"2025-05-22" },
+  { id:10, titulo:"Campanha Google Ads + Meta Ads", desc:"Criação, gestão e otimização de campanhas de tráfego pago para loja online.", categoria:"Marketing", budget:1400, moeda:"USD", prazo:30, tags:["Google Ads","Meta Ads","Analytics"], cliente:"Loja Online XYZ", propostas:11, data:"2025-05-21" },
+];
+
+const freelancers = [
+  { id:1, nome:"Ana Moura", area:"UI/UX Designer", bio:"5 anos de experiência em design de interfaces para startups e grandes empresas. Especialista em Figma e pesquisa de utilizador.", tags:["Figma","UI Design","UX Research","Prototyping"], rate:"€ 45/h", projetos:38, stars:5 },
+  { id:2, nome:"Rafael Bastos", area:"Dev Full Stack", bio:"Programador full stack com foco em React e Node.js. Já desenvolvi mais de 30 aplicações web e mobile para clientes em Portugal e Brasil.", tags:["React","Node.js","PostgreSQL","Docker"], rate:"€ 55/h", projetos:31, stars:5 },
+  { id:3, nome:"Mariana Costa", area:"Marketing Digital", bio:"Especialista em crescimento orgânico e pago. Geri campanhas com orçamentos acima de €50k mensais para e-commerces.", tags:["Google Ads","Meta Ads","SEO","Analytics"], rate:"€ 40/h", projetos:22, stars:4 },
+  { id:4, nome:"Pedro Alves", area:"Copywriter & SEO", bio:"Redator especializado em conteúdo para blogs, landing pages e email marketing. Mais de 500 artigos publicados.", tags:["SEO","Copywriting","WordPress","Email Mkt"], rate:"€ 30/h", projetos:55, stars:5 },
+  { id:5, nome:"Sofia Neves", area:"Motion Designer", bio:"Animações e vídeos institucionais com foco em storytelling. Cliente inclui marcas como Nos, Galp e CTT.", tags:["After Effects","Premiere","Motion","Illustrator"], rate:"€ 50/h", projetos:17, stars:5 },
+  { id:6, nome:"Tiago Ferreira", area:"Data Analyst", bio:"Analista de dados com expertise em Power BI, Python e SQL. Transformo dados em insights acionáveis para negócios.", tags:["Power BI","Python","SQL","Tableau"], rate:"€ 48/h", projetos:24, stars:4 },
+];
+
+// Projetos criados pelo cliente na sessão
+let meusProjectos = [];
+let filtroAtivo = '';
+let projetoModalAtual = null;
+let freelancerModalAtual = null;
+
+// ═══════════════════════════════════
+// INICIALIZAÇÃO
+// ═══════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const perfil = sessionStorage.getItem('perfil') || 'convidado';
+  iniciarDashboard(perfil);
+});
+
+function iniciarDashboard(perfil) {
+  // Ler dados do perfil guardados
+  const dadosPerfil = JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+  const nomeGuardado = dadosPerfil.nome || dadosPerfil.nome || '';
+
+  // Gerar iniciais ou emoji
+  const isFreelancer = perfil === 'freelancer';
+  const isCliente    = perfil === 'cliente';
+  const emoji        = isFreelancer ? '👷' : isCliente ? '🧑' : '👀';
+  const labelPerfil  = isFreelancer ? 'Freelancer' : isCliente ? 'Cliente' : 'Convidado';
+  const nomeDisplay  = nomeGuardado || labelPerfil;
+  const handle       = '@' + nomeDisplay.toLowerCase().replace(/\s+/g, '');
+
+  // Iniciais para o avatar
+  const iniciais = nomeGuardado
+    ? nomeGuardado.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()
+    : emoji;
+
+  // Atualizar navbar avatar + nome
+  document.getElementById('profileAvatar').textContent = iniciais;
+  document.getElementById('profileName').textContent   = nomeDisplay;
+  document.getElementById('pdAvatar').textContent      = iniciais;
+  document.getElementById('pdNome').textContent        = nomeDisplay;
+  document.getElementById('pdHandle').textContent      = handle;
+
+  // Tabs nav
+  const navCenter = document.getElementById('navCenter');
+  if (perfil === 'freelancer') {
+    navCenter.innerHTML = `<button class="nav-tab active">🔍 Projetos</button>`;
+    document.getElementById('vistaFreelancer').classList.add('active');
+    renderFreelancerProjs();
+  } else if (perfil === 'cliente') {
+    navCenter.innerHTML = `
+      <button class="nav-tab active" onclick="setClienteTab(this,'publicar')">➕ Publicar</button>
+      <button class="nav-tab" onclick="setClienteTab(this,'freelancers')">👷 Freelancers</button>
+    `;
+    document.getElementById('vistaCliente').classList.add('active');
+    renderFreelancers();
+  } else {
+    navCenter.innerHTML = `<button class="nav-tab active">🔍 Explorar projetos</button>`;
+    document.getElementById('vistaFreelancer').classList.add('active');
+    document.querySelector('.dash-header h1').innerHTML = 'Bem-vindo ao <span>Work on Pan</span> 🍳';
+    document.querySelector('.dash-header p').textContent = 'Explora os projetos disponíveis. Cria uma conta para enviar propostas.';
+    renderFreelancerProjs();
+  }
+}
+
+// ── DROPDOWN PERFIL ──
+function toggleProfileMenu() {
+  const btn      = document.getElementById('profileBtn');
+  const dropdown = document.getElementById('profileDropdown');
+  const chevron  = document.getElementById('profileChevron');
+  const isOpen   = dropdown.classList.contains('open');
+
+  dropdown.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+// Fechar ao clicar fora
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('profileMenuWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('profileDropdown').classList.remove('open');
+    document.getElementById('profileBtn').classList.remove('open');
+    document.getElementById('profileChevron').style.transform = 'rotate(0deg)';
+  }
+});
+
+function irPerfil()        { window.location.href = 'perfil.html'; }
+function irConfiguracoes() { window.location.href = 'definicoes.html'; }
+function irAjuda()         { alert('Ajuda — em breve!'); }
+
+function setClienteTab(btn, tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  // scroll suave para a secção
+  const target = tab === 'publicar'
+    ? document.querySelector('.pub-box')
+    : document.getElementById('cFreeGrid');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function sair() {
+  sessionStorage.removeItem('perfil');
+  sessionStorage.removeItem('userProfile');
+  window.location.href = 'login.html';
+}
+
+// ═══════════════════════════════════
+// VISTA FREELANCER — projetos
+// ═══════════════════════════════════
+function setFiltro(btn, cat) {
+  filtroAtivo = cat;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFreelancerProjs();
+}
+
+function renderFreelancerProjs() {
+  const search = (document.getElementById('fSearch')?.value || '').toLowerCase();
+  // Combinar projetos base + projetos publicados pelo cliente
+  const todos = [...projetos, ...meusProjectos];
+
+  let lista = todos.filter(p => {
+    const matchCat = !filtroAtivo || p.categoria === filtroAtivo;
+    const matchSearch = !search || p.titulo.toLowerCase().includes(search) || p.desc.toLowerCase().includes(search) || p.tags.some(t => t.toLowerCase().includes(search));
+    return matchCat && matchSearch;
+  });
+
+  document.getElementById('fTotalProj').textContent = todos.length;
+  document.getElementById('fCountLabel').textContent = `${lista.length} projeto${lista.length !== 1 ? 's' : ''}`;
+
+  const grid = document.getElementById('fProjGrid');
+  if (lista.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div>🔍</div><p>Nenhum projeto encontrado.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = lista.map((p, i) => `
+    <div class="proj-card" style="animation-delay:${i * 0.05}s" onclick="abrirModalProposta(${p.id}, ${p.id > 100 ? '"custom"' : 'null'})">
+      <div class="proj-card-top">
+        <span class="cat-badge cat-${p.categoria}">${p.categoria}</span>
+        <span class="proj-budget">${MOEDAS[p.moeda]?.simbolo || '€'} ${p.budget.toLocaleString()}</span>
+      </div>
+      <h3>${p.titulo}</h3>
+      <p>${p.desc}</p>
+      <div class="proj-tags">${p.tags.map(t => `<span>${t}</span>`).join('')}</div>
+      <div class="proj-footer">
+        <span>📅 ${p.prazo} dias &nbsp;·&nbsp; 💬 ${p.propostas} propostas</span>
+        <button class="btn-teal" onclick="event.stopPropagation();abrirModalPropostaById(${p.id})">Propor</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalPropostaById(id) {
+  const todos = [...projetos, ...meusProjectos];
+  const p = todos.find(x => x.id === id);
+  if (!p) return;
+  projetoModalAtual = p;
+
+  document.getElementById('mpTitulo').textContent = p.titulo;
+  document.getElementById('mpDesc').textContent = p.desc;
+  document.getElementById('mpBudget').textContent = `${MOEDAS[p.moeda]?.simbolo || '€'} ${p.budget.toLocaleString()}`;
+  document.getElementById('mpMoeda').textContent = p.moeda;
+  document.getElementById('mpPrazo').textContent = `${p.prazo} dias`;
+  document.getElementById('mpCliente').textContent = p.cliente;
+  document.getElementById('mpMoedaProp').value = p.moeda;
+  document.getElementById('mpValor').value = '';
+  document.getElementById('mpPrazoProp').value = '';
+  document.getElementById('mpMsg').value = '';
+  document.getElementById('mpSuccess').style.display = 'none';
+  document.querySelector('#modalProposta .btn-teal').disabled = false;
+  document.querySelector('#modalProposta .btn-teal').textContent = 'Enviar proposta →';
+
+  document.getElementById('modalProposta').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function abrirModalProposta(id) { abrirModalPropostaById(id); }
+
+function fecharModalProposta(event) {
+  if (event && event.target !== document.getElementById('modalProposta')) return;
+  document.getElementById('modalProposta').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function enviarProposta() {
+  const perfil = sessionStorage.getItem('perfil');
+  if (perfil === 'convidado' || !perfil) {
+    alert('Precisas de criar uma conta para enviar propostas!');
+    window.location.href = 'cadastro.html?tipo=freelancer';
+    return;
+  }
+  const valor = document.getElementById('mpValor').value;
+  const prazo = document.getElementById('mpPrazoProp').value;
+  const msg   = document.getElementById('mpMsg').value;
+  if (!valor || !prazo || !msg) { alert('Preenche todos os campos da proposta.'); return; }
+
+  const btn = document.querySelector('#modalProposta .btn-teal');
+  btn.textContent = 'A enviar...'; btn.disabled = true;
+
+  setTimeout(() => {
+    document.getElementById('mpSuccess').style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('modalProposta').classList.remove('open');
+      document.body.style.overflow = '';
+      btn.disabled = false; btn.textContent = 'Enviar proposta →';
+    }, 1800);
+  }, 900);
+}
+
+// ═══════════════════════════════════
+// VISTA CLIENTE — publicar projeto
+// ═══════════════════════════════════
+function publicarProjeto() {
+  const titulo  = document.getElementById('pubTitulo').value;
+  const cat     = document.getElementById('pubCat').value;
+  const desc    = document.getElementById('pubDesc').value;
+  const budget  = document.getElementById('pubBudget').value;
+  const moeda   = document.getElementById('pubMoeda').value;
+  const prazo   = document.getElementById('pubPrazo').value;
+  const tagsRaw = document.getElementById('pubTags').value;
+
+  if (!titulo || !cat || !desc || !budget || !prazo) {
+    alert('Preenche pelo menos o título, categoria, descrição, orçamento e prazo.');
+    return;
+  }
+
+  const novo = {
+    id: Date.now(),
+    titulo, categoria: cat, desc,
+    budget: parseInt(budget), moeda,
+    prazo: parseInt(prazo),
+    tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
+    cliente: 'Tu',
+    propostas: 0,
+    data: new Date().toISOString().split('T')[0]
+  };
+
+  meusProjectos.push(novo);
+
+  // Atualizar stats
+  document.getElementById('cTotalProj').textContent = meusProjectos.length;
+
+  // Mostrar sucesso
+  const suc = document.getElementById('pubSuccess');
+  suc.style.display = 'block';
+  setTimeout(() => { suc.style.display = 'none'; }, 3000);
+
+  // Limpar form
+  ['pubTitulo','pubCat','pubDesc','pubBudget','pubPrazo','pubTags'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  renderMeusProjetos();
+}
+
+function renderMeusProjetos() {
+  const lista = document.getElementById('meusProjetosLista');
+  if (meusProjectos.length === 0) {
+    lista.innerHTML = `<div class="empty-state"><div>📋</div><p>Ainda não publicaste nenhum projeto.<br/>Usa o formulário acima para começar!</p></div>`;
+    return;
+  }
+
+  lista.innerHTML = meusProjectos.map(p => `
+    <div class="meus-proj-card">
+      <div class="mpj-info">
+        <h4>${p.titulo}</h4>
+        <span>${p.categoria} &nbsp;·&nbsp; ${MOEDAS[p.moeda]?.simbolo || '€'} ${p.budget.toLocaleString()} &nbsp;·&nbsp; ${p.prazo} dias</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="mpj-status status-aberto">Aberto</span>
+        <span style="font-size:0.78rem;color:var(--gray2)">0 propostas</span>
+        <button class="btn-ghost" onclick="removerProjeto(${p.id})">Remover</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removerProjeto(id) {
+  meusProjectos = meusProjectos.filter(p => p.id !== id);
+  document.getElementById('cTotalProj').textContent = meusProjectos.length;
+  renderMeusProjetos();
+}
+
+// ═══════════════════════════════════
+// VISTA CLIENTE — freelancers
+// ═══════════════════════════════════
+function renderFreelancers() {
+  const grid = document.getElementById('cFreeGrid');
+  grid.innerHTML = freelancers.map((f, i) => `
+    <div class="free-card" style="animation-delay:${i * 0.06}s" onclick="abrirModalFree(${f.id})">
+      <div class="free-top">
+        <div class="avatar">${f.nome.split(' ').map(n=>n[0]).join('')}</div>
+        <div class="free-info">
+          <strong>${f.nome}</strong>
+          <span>${f.area}</span>
+        </div>
+      </div>
+      <div class="stars">${'★'.repeat(f.stars)}${'☆'.repeat(5 - f.stars)}</div>
+      <p class="free-bio">${f.bio}</p>
+      <div class="free-tags">${f.tags.map(t => `<span>${t}</span>`).join('')}</div>
+      <div class="free-footer">
+        <span class="free-rate">${f.rate}</span>
+        <button class="btn-teal" onclick="event.stopPropagation();abrirModalFree(${f.id})">Ver perfil</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalFree(id) {
+  const f = freelancers.find(x => x.id === id);
+  if (!f) return;
+  freelancerModalAtual = f;
+
+  document.getElementById('mfAvatar').textContent = f.nome.split(' ').map(n=>n[0]).join('');
+  document.getElementById('mfNome').textContent = f.nome;
+  document.getElementById('mfArea').textContent = f.area;
+  document.getElementById('mfStars').textContent = '★'.repeat(f.stars) + '☆'.repeat(5 - f.stars);
+  document.getElementById('mfBio').textContent = f.bio;
+  document.getElementById('mfRate').textContent = f.rate;
+  document.getElementById('mfProj').textContent = f.projetos;
+  document.getElementById('mfTags').innerHTML = f.tags.map(t => `<span class="proj-tags"><span>${t}</span></span>`).join('');
+  document.getElementById('mfContactSuccess').style.display = 'none';
+  document.querySelector('#modalFreelancer .btn-teal').textContent = '💬 Contactar freelancer';
+  document.querySelector('#modalFreelancer .btn-teal').disabled = false;
+
+  document.getElementById('modalFreelancer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharModalFree(event) {
+  if (event && event.target !== document.getElementById('modalFreelancer')) return;
+  document.getElementById('modalFreelancer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function contatarFreelancer() {
+  const btn = document.querySelector('#modalFreelancer .btn-teal');
+  btn.textContent = 'A enviar...'; btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('mfContactSuccess').style.display = 'block';
+  }, 800);
+}
+
+// Fechar modais com ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => {
+      m.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  }
+});
+</script>
+</body>
+</html>

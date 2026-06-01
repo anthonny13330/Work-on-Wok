@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Projetos — Work on Pan</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Work on <span>Pan</span></a>
+    <ul class="nav-links">
+      <li><a href="projetos.html" style="color:#0d0d0d">Projetos</a></li>
+      <li><a href="index.html#como-funciona">Como Funciona</a></li>
+      <li id="navAuthLink"><a href="login.html" class="btn-nav">Entrar / Cadastrar</a></li>
+    </ul>
+    <button class="hamburger" onclick="toggleMenu()">☰</button>
+  </nav>
+
+  <div class="page-header">
+    <div class="section-label" style="color:rgba(255,255,255,0.5)">Oportunidades</div>
+    <h1>Projetos disponíveis</h1>
+    <p>Encontre o projeto ideal para as tuas habilidades</p>
+  </div>
+
+  <div class="projetos-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="filter-group">
+        <h4>Buscar</h4>
+        <input type="text" id="searchInput" placeholder="🔍  Buscar projeto..." oninput="filtrarProjetos()"/>
+      </div>
+      <div class="filter-group">
+        <h4>Categoria</h4>
+        <div class="checkbox-list">
+          <label><input type="checkbox" value="Design" onchange="filtrarProjetos()"/> Design & UI/UX</label>
+          <label><input type="checkbox" value="Dev" onchange="filtrarProjetos()"/> Desenvolvimento</label>
+          <label><input type="checkbox" value="Marketing" onchange="filtrarProjetos()"/> Marketing</label>
+          <label><input type="checkbox" value="Redação" onchange="filtrarProjetos()"/> Redação</label>
+          <label><input type="checkbox" value="Vídeo" onchange="filtrarProjetos()"/> Vídeo</label>
+          <label><input type="checkbox" value="Dados" onchange="filtrarProjetos()"/> Dados</label>
+        </div>
+      </div>
+      <div class="filter-group">
+        <h4>Orçamento (valor máx.)</h4>
+        <select id="budgetFilter" onchange="filtrarProjetos()">
+          <option value="">Todos</option>
+          <option value="500">Até 500</option>
+          <option value="1000">Até 1.000</option>
+          <option value="3000">Até 3.000</option>
+          <option value="5000">Até 5.000</option>
+          <option value="99999">Acima de 5.000</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <h4>Prazo</h4>
+        <select id="prazoFilter" onchange="filtrarProjetos()">
+          <option value="">Todos</option>
+          <option value="7">Até 7 dias</option>
+          <option value="15">Até 15 dias</option>
+          <option value="30">Até 30 dias</option>
+          <option value="60">Até 60 dias</option>
+        </select>
+      </div>
+      <button onclick="limparFiltros()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;background:none;font-family:'DM Sans',sans-serif;cursor:pointer;font-size:.88rem;color:var(--gray);transition:background .2s"
+        onmouseover="this.style.background='var(--light)'" onmouseout="this.style.background='none'">Limpar filtros</button>
+    </aside>
+
+    <!-- LISTA -->
+    <main class="projetos-main">
+      <div class="projetos-toolbar">
+        <span id="totalLabel">A carregar projetos...</span>
+        <select id="sortSelect" onchange="filtrarProjetos()">
+          <option value="recente">Mais recentes</option>
+          <option value="maior">Maior orçamento</option>
+          <option value="menor">Menor orçamento</option>
+          <option value="prazo">Prazo mais curto</option>
+        </select>
+      </div>
+      <!-- Estado de loading -->
+      <div id="loadingState" style="text-align:center;padding:60px 20px;color:var(--gray)">
+        <div style="font-size:2rem;margin-bottom:12px;animation:spin 1s linear infinite;display:inline-block">⟳</div>
+        <p>A carregar projetos...</p>
+      </div>
+      <div class="projetos-list" id="projetosList" style="display:none"></div>
+    </main>
+  </div>
+
+  <!-- MODAL PROPOSTA -->
+  <div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
+    <div class="modal">
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+      <h3 id="modalTitulo"></h3>
+      <p id="modalDesc"></p>
+      <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+        <div style="background:var(--light);padding:12px 18px;border-radius:10px;font-size:.85rem">💰 <strong id="modalBudget"></strong></div>
+        <div style="background:var(--accent-light);padding:12px 18px;border-radius:10px;font-size:.85rem;color:var(--accent)">🌍 <strong id="modalMoedaNome"></strong></div>
+        <div style="background:var(--light);padding:12px 18px;border-radius:10px;font-size:.85rem">📅 <strong id="modalPrazo"></strong></div>
+      </div>
+      <!-- Aviso para não autenticados -->
+      <div id="modalAuthWarn" style="display:none;background:#fff3e0;border:1px solid #f39c12;border-radius:10px;padding:14px;text-align:center;font-size:.9rem;margin-bottom:16px">
+        ⚠️ <a href="login.html" style="color:var(--accent);font-weight:500">Inicia sessão</a> para enviar uma proposta.
+      </div>
+      <!-- Formulário proposta (só freelancers autenticados) -->
+      <div id="modalPropostaForm" style="border-top:1px solid var(--border);padding-top:24px;margin-top:4px">
+        <h4 style="margin-bottom:16px;font-size:1rem">Enviar proposta</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label>Teu valor</label>
+            <input type="number" id="propValor" placeholder="Quanto cobras?"/>
+          </div>
+          <div class="form-group">
+            <label>Moeda</label>
+            <select id="propMoeda">
+              <option value="EUR">€ Euro</option>
+              <option value="BRL">R$ Real</option>
+              <option value="USD">$ Dólar</option>
+              <option value="GBP">£ Libra</option>
+              <option value="CHF">Fr Franco Suíço</option>
+              <option value="CAD">C$ Dólar Canadiano</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Prazo de entrega</label>
+          <input type="text" id="propPrazo" placeholder="Ex: 10 dias"/>
+        </div>
+        <div class="form-group">
+          <label>Mensagem ao cliente</label>
+          <textarea id="propMsg" placeholder="Por que és o ideal para este projeto?"></textarea>
+        </div>
+        <div id="propostaAlert" style="display:none;border-radius:10px;padding:14px;text-align:center;font-size:.9rem;margin-bottom:12px"></div>
+        <button class="btn-submit" id="btnEnviarProposta" onclick="enviarProposta()">Enviar proposta →</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* categoria badges */
+    .proj-cat { font-size:.72rem; font-weight:600; font-family:'Syne',sans-serif; padding:3px 10px; border-radius:6px; letter-spacing:.4px; }
+    .proj-cat.design { background:#fef3e2; color:#b45309; }
+    .proj-cat.dev    { background:#e0f2fe; color:#0369a1; }
+    .proj-cat.mkt    { background:#fce7f3; color:#9d174d; }
+    .btn-proj { padding:8px 18px; background:var(--accent); color:#fff; border:none; border-radius:50px; font-size:.82rem; font-weight:500; cursor:pointer; transition:transform .2s; white-space:nowrap; }
+    .btn-proj:hover { transform:translateY(-1px); }
+    .proj-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .proj-tags span { background:var(--light); border-radius:6px; padding:3px 10px; font-size:.78rem; color:var(--gray); }
+    .moeda-badge { font-size:.72rem; font-weight:700; font-family:'Syne',sans-serif; padding:3px 8px; border-radius:6px; letter-spacing:.5px; }
+    .moeda-EUR{background:#e8f4fd;color:#1a6fa8} .moeda-BRL{background:#e8f5e9;color:#2e7d32}
+    .moeda-USD{background:#e3f2fd;color:#1565c0} .moeda-GBP{background:#f3e5f5;color:#6a1b9a}
+    .moeda-CHF{background:#fce4ec;color:#ad1457} .moeda-CAD{background:#fff3e0;color:#e65100}
+  </style>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    // ── CONFIGURA AQUI ────────────────────────────────────────
+    const SUPABASE_URL  = 'https://dsxsvnzcrouazkkdbpym.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable_QjkIhpoe1K9AZO_nTUXO0A_LaE2gTqP';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    // ─────────────────────────────────────────────────────────
+
+    const MOEDAS = {
+      EUR:{simbolo:'€',nome:'Euro',locale:'pt-PT'},
+      BRL:{simbolo:'R$',nome:'Real Brasileiro',locale:'pt-BR'},
+      USD:{simbolo:'$',nome:'Dólar Americano',locale:'en-US'},
+      GBP:{simbolo:'£',nome:'Libra Esterlina',locale:'en-GB'},
+      CHF:{simbolo:'Fr',nome:'Franco Suíço',locale:'de-CH'},
+      CAD:{simbolo:'C$',nome:'Dólar Canadiano',locale:'en-CA'},
+    };
+    function fmt(val,cod){const m=MOEDAS[cod]||MOEDAS.EUR;return `${m.simbolo} ${Number(val).toLocaleString(m.locale)}`;}
+    function badgeMoeda(cod){return `<span class="moeda-badge moeda-${cod}">${cod}</span>`;}
+    function catClass(c){const m={Design:'design',Dev:'dev',Marketing:'mkt','Redação':'mkt','Vídeo':'design',Dados:'dev'};return m[c]||'design';}
+
+    let todosProjetos = [];
+    let sessaoAtual   = null;
+    let perfilAtual   = null;
+    let projetoAberto = null;
+
+    // ── INIT ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data } = await sb.auth.getSession();
+      sessaoAtual = data.session;
+
+      if (sessaoAtual) {
+        const { data: p } = await sb.from('profiles').select('tipo,nome').eq('id', sessaoAtual.user.id).single();
+        perfilAtual = p;
+        document.getElementById('navAuthLink').innerHTML =
+          `<a href="perfil.html" class="btn-nav">👤 ${p?.nome || 'Perfil'}</a>`;
+      }
+
+      await carregarProjetos();
+
+      // Filtro por categoria via URL
+      const cat = new URLSearchParams(window.location.search).get('cat');
+      if (cat) {
+        const mapa = {design:'Design',dev:'Dev',marketing:'Marketing',texto:'Redação',video:'Vídeo',dados:'Dados'};
+        const nome = mapa[cat];
+        if (nome) {
+          const cb = document.querySelector(`.checkbox-list input[value="${nome}"]`);
+          if (cb) { cb.checked = true; filtrarProjetos(); }
+        }
+      }
+    });
+
+    // ── CARREGAR DO SUPABASE ──────────────────────────────────
+    async function carregarProjetos() {
+      const { data, error } = await sb
+        .from('projetos')
+        .select(`
+          id, titulo, descricao, categoria, budget, moeda,
+          prazo_dias, tags, estado, created_at,
+          profiles:cliente_id (nome, sobrenome)
+        `)
+        .eq('estado', 'aberto')
+        .order('created_at', { ascending: false });
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('projetosList').style.display = 'flex';
+
+      if (error || !data || data.length === 0) {
+        // Fallback: usa dados locais para demonstração
+        todosProjetos = PROJETOS_DEMO;
+      } else {
+        todosProjetos = data.map(p => ({
+          ...p,
+          prazo: p.prazo_dias,
+          desc: p.descricao,
+          cliente: p.profiles ? `${p.profiles.nome} ${p.profiles.sobrenome||''}`.trim() : 'Anónimo',
+          propostas: 0,
+          data: p.created_at,
+        }));
+      }
+
+      filtrarProjetos();
+    }
+
+    // ── RENDER ────────────────────────────────────────────────
+    function renderProjetos(lista) {
+      const container = document.getElementById('projetosList');
+      const label     = document.getElementById('totalLabel');
+      label.textContent = `${lista.length} projeto${lista.length !== 1 ? 's' : ''} encontrado${lista.length !== 1 ? 's' : ''}`;
+
+      if (lista.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--gray)"><div style="font-size:2.5rem;margin-bottom:12px">🔍</div><p>Nenhum projeto encontrado com esses filtros.</p></div>`;
+        return;
+      }
+      container.innerHTML = lista.map(p => `
+        <div class="projeto-item" onclick="abrirModal('${p.id}')">
+          <div class="projeto-item-top">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span class="proj-cat ${catClass(p.categoria)}">${p.categoria}</span>
+              <h3>${p.titulo}</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${badgeMoeda(p.moeda||'EUR')}
+              <span class="projeto-item-budget">${fmt(p.budget, p.moeda||'EUR')}</span>
+            </div>
+          </div>
+          <p>${p.desc||p.descricao}</p>
+          <div class="proj-tags">${(p.tags||[]).map(t=>`<span>${t}</span>`).join('')}</div>
+          <div class="projeto-item-footer">
+            <div class="meta">
+              <span>📅 ${p.prazo||p.prazo_dias} dias</span>
+              <span>🏢 ${p.cliente||'—'}</span>
+            </div>
+            <button class="btn-proj" onclick="event.stopPropagation();abrirModal('${p.id}')">Ver & Propor</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── FILTROS ───────────────────────────────────────────────
+    function filtrarProjetos() {
+      const search = (document.getElementById('searchInput')?.value||'').toLowerCase();
+      const budget = document.getElementById('budgetFilter')?.value;
+      const prazo  = document.getElementById('prazoFilter')?.value;
+      const sort   = document.getElementById('sortSelect')?.value||'recente';
+      const cats   = [...document.querySelectorAll('.checkbox-list input:checked')].map(el=>el.value);
+
+      let lista = todosProjetos.filter(p => {
+        const dias = p.prazo || p.prazo_dias;
+        const matchSearch = !search || p.titulo.toLowerCase().includes(search) || (p.desc||p.descricao||'').toLowerCase().includes(search) || (p.tags||[]).some(t=>t.toLowerCase().includes(search));
+        const matchCat    = cats.length===0 || cats.includes(p.categoria);
+        const matchBudget = !budget || p.budget <= parseInt(budget);
+        const matchPrazo  = !prazo  || dias <= parseInt(prazo);
+        return matchSearch && matchCat && matchBudget && matchPrazo;
+      });
+
+      if (sort==='maior') lista.sort((a,b)=>b.budget-a.budget);
+      else if (sort==='menor') lista.sort((a,b)=>a.budget-b.budget);
+      else if (sort==='prazo') lista.sort((a,b)=>(a.prazo||a.prazo_dias)-(b.prazo||b.prazo_dias));
+      else lista.sort((a,b)=>new Date(b.data||b.created_at)-new Date(a.data||a.created_at));
+
+      renderProjetos(lista);
+    }
+
+    function limparFiltros() {
+      document.querySelectorAll('.checkbox-list input').forEach(el=>el.checked=false);
+      ['searchInput','budgetFilter','prazoFilter'].forEach(id=>{ if(document.getElementById(id)) document.getElementById(id).value=''; });
+      document.getElementById('sortSelect').value='recente';
+      filtrarProjetos();
+    }
+
+    // ── MODAL ─────────────────────────────────────────────────
+    function abrirModal(id) {
+      const p = todosProjetos.find(x=>String(x.id)===String(id));
+      if (!p) return;
+      projetoAberto = p;
+
+      const cod   = p.moeda||'EUR';
+      const moeda = MOEDAS[cod];
+      document.getElementById('modalTitulo').textContent = p.titulo;
+      document.getElementById('modalDesc').textContent   = p.desc||p.descricao;
+      document.getElementById('modalBudget').textContent = fmt(p.budget, cod);
+      document.getElementById('modalMoedaNome').textContent = `${cod} — ${moeda.nome}`;
+      document.getElementById('modalPrazo').textContent  = `${p.prazo||p.prazo_dias} dias`;
+      document.getElementById('propMoeda').value = cod;
+      document.getElementById('propValor').value = '';
+      document.getElementById('propPrazo').value = '';
+      document.getElementById('propMsg').value   = '';
+      document.getElementById('propostaAlert').style.display = 'none';
+      document.getElementById('btnEnviarProposta').disabled  = false;
+      document.getElementById('btnEnviarProposta').textContent = 'Enviar proposta →';
+
+      // Mostrar ou esconder formulário consoante auth + tipo
+      const isFreelancer = sessaoAtual && perfilAtual?.tipo === 'freelancer';
+      document.getElementById('modalAuthWarn').style.display     = isFreelancer ? 'none' : 'block';
+      document.getElementById('modalPropostaForm').style.display = isFreelancer ? 'block' : 'none';
+      if (!sessaoAtual) document.getElementById('modalPropostaForm').style.display = 'none';
+
+      document.getElementById('modalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function fecharModal(event) {
+      if (event && event.target !== document.getElementById('modalOverlay') && !event.currentTarget.classList?.contains('modal-close')) return;
+      document.getElementById('modalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key==='Escape') { document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow=''; }
+    });
+
+    // ── ENVIAR PROPOSTA ───────────────────────────────────────
+    async function enviarProposta() {
+      const valor = document.getElementById('propValor').value;
+      const prazo = document.getElementById('propPrazo').value.trim();
+      const msg   = document.getElementById('propMsg').value.trim();
+      const moeda = document.getElementById('propMoeda').value;
+
+      if (!valor || !prazo || !msg) {
+        showPropostaAlert('Preenche todos os campos.', 'error'); return;
+      }
+
+      const btn = document.getElementById('btnEnviarProposta');
+      btn.disabled = true; btn.textContent = 'A enviar...';
+
+      const { error } = await sb.from('propostas').insert({
+        projeto_id:    projetoAberto.id,
+        freelancer_id: sessaoAtual.user.id,
+        valor:         parseFloat(valor),
+        moeda,
+        prazo_entrega: prazo,
+        mensagem:      msg,
+      });
+
+      if (error) {
+        const msg_erro = error.code === '23505'
+          ? 'Já enviaste uma proposta para este projeto.'
+          : 'Erro ao enviar proposta. Tenta novamente.';
+        showPropostaAlert(msg_erro, 'error');
+        btn.disabled = false; btn.textContent = 'Enviar proposta →';
+        return;
+      }
+
+      showPropostaAlert('✅ Proposta enviada com sucesso!', 'success');
+      btn.textContent = 'Proposta enviada ✓';
+      setTimeout(() => {
+        fecharModal({ target: document.getElementById('modalOverlay') });
+        btn.disabled = false; btn.textContent = 'Enviar proposta →';
+      }, 2000);
+    }
+
+    function showPropostaAlert(texto, tipo) {
+      const el = document.getElementById('propostaAlert');
+      el.textContent = texto;
+      el.style.display = 'block';
+      el.style.background = tipo==='success' ? 'var(--teal-light)' : '#fff0f0';
+      el.style.color = tipo==='success' ? 'var(--teal)' : '#cc0000';
+      el.style.borderRadius = '10px';
+      el.style.padding = '14px';
+    }
+
+    // ── NAV MOBILE ────────────────────────────────────────────
+    function toggleMenu() { document.querySelector('.nav-links').classList.toggle('open'); }
+
+    // ── DADOS DE DEMONSTRAÇÃO (fallback sem Supabase) ─────────
+    const PROJETOS_DEMO = [
+      { id:1, titulo:"Redesign de identidade visual para startup", desc:"Precisamos renovar logo, paleta de cores e guia de marca completo.", categoria:"Design", budget:1200, moeda:"EUR", prazo:15, tags:["Branding","Figma","Illustrator"], cliente:"TechStart Ltda", data:"2025-06-01" },
+      { id:2, titulo:"Desenvolvimento de app mobile para delivery", desc:"App iOS e Android com pagamento e rastreamento em tempo real.", categoria:"Dev", budget:4500, moeda:"BRL", prazo:45, tags:["React Native","Node.js","API REST"], cliente:"FoodExpress", data:"2025-05-30" },
+      { id:3, titulo:"Gestão de redes sociais — 3 meses", desc:"Criação de conteúdo para Instagram e LinkedIn.", categoria:"Marketing", budget:800, moeda:"EUR", prazo:90, tags:["Instagram","Copywriting","Canva"], cliente:"ModaVibe", data:"2025-05-28" },
+      { id:4, titulo:"Landing page para lançamento de curso", desc:"Página de vendas completa com FAQ e integração de pagamento.", categoria:"Dev", budget:950, moeda:"USD", prazo:10, tags:["HTML/CSS","JavaScript","WordPress"], cliente:"EduPro Cursos", data:"2025-05-27" },
+      { id:5, titulo:"Produção de vídeos institucionais (5 vídeos)", desc:"Roteiro, filmagem e edição de 5 vídeos curtos.", categoria:"Vídeo", budget:3200, moeda:"EUR", prazo:30, tags:["Premiere","After Effects","Roteiro"], cliente:"Construtora Alfa", data:"2025-05-26" },
+      { id:6, titulo:"Dashboard de BI para análise de vendas", desc:"Dashboard interativo no Power BI com KPIs de vendas.", categoria:"Dados", budget:2100, moeda:"GBP", prazo:20, tags:["Power BI","SQL","PostgreSQL"], cliente:"Distribuidora Norte", data:"2025-05-25" },
+      { id:7, titulo:"Redação de 20 artigos para blog corporativo", desc:"Artigos SEO-friendly de 800-1200 palavras sobre tecnologia.", categoria:"Redação", budget:600, moeda:"EUR", prazo:25, tags:["SEO","Wordpress","Copywriting"], cliente:"AgênciaWeb360", data:"2025-05-24" },
+      { id:8, titulo:"Sistema de gestão de estoque (web)", desc:"CRUD completo com relatórios e autenticação.", categoria:"Dev", budget:6500, moeda:"BRL", prazo:60, tags:["Python","Django","React"], cliente:"Atacado Max", data:"2025-05-23" },
+      { id:9, titulo:"Design de UI para plataforma SaaS", desc:"Design completo no Figma para gestão de projetos — 15 telas.", categoria:"Design", budget:2800, moeda:"EUR", prazo:21, tags:["Figma","UI Design","Design System"], cliente:"FlowWork", data:"2025-05-22" },
+      { id:10, titulo:"Campanha Google Ads + Meta Ads", desc:"Criação e gestão de campanhas de tráfego pago.", categoria:"Marketing", budget:1400, moeda:"USD", prazo:30, tags:["Google Ads","Meta Ads","Analytics"], cliente:"Loja Online XYZ", data:"2025-05-21" },
+    ];
+  </script>
+</body>
+</html>
